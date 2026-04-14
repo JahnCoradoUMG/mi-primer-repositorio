@@ -1,0 +1,68 @@
+# Matriz de fuentes y proceso manual - Reportería de Células
+
+## Objetivo
+
+Documentar las aplicaciones fuente, los reportes a descargar, el proceso manual actual y los datos requeridos para construir la reportería de Células en una plantilla predefinida. Este documento sirve como base funcional para una futura automatización en Python.
+
+## Alcance y supuestos
+
+- La información confirmada proviene de la captura del Excel compartida por el usuario.
+- El diagrama de flujo adjunto se utilizó como referencia de alto nivel para entender que el proceso actual es manual y contempla descarga, filtrado, consolidación y validación.
+- Como no se dispone del archivo Excel original ni del diagrama en formato editable dentro del workspace, algunos campos del reporte **CDR Completo por Campaña** quedan marcados como **pendientes de validación**.
+
+## Resumen del proceso manual actual
+
+1. El analista ingresa a **UCONTACT**.
+2. Descarga los reportes requeridos desde los modulos indicados.
+3. Aplica filtros por rango de fechas:
+   - mes anterior
+   - mes actual
+4. Filtra la informacion por la campana **Celulas**.
+5. Exporta los reportes descargados.
+6. Depura y conserva unicamente las columnas necesarias.
+7. Cruza o consolida la informacion en una plantilla predefinida.
+8. Revisa consistencia, duplicados y trazabilidad antes de emitir la reportería final.
+
+## Matriz mejorada de aplicaciones, reportes y datos requeridos
+
+| No. | Aplicacion | Modulo / Ruta | Reporte | Donde se obtiene la informacion | Como se obtiene actualmente (manual) | Filtros actuales | Datos requeridos del reporte | Uso en la plantilla final | Observaciones |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | UCONTACT | Reportes > Tipificaciones > Detalle de tipificaciones telefonia por fecha FGE | Detalle de tipificaciones | Desde el modulo de tipificaciones de UCONTACT, donde se registran el resultado de gestion y los comentarios asociados a la interaccion. | El analista ingresa al modulo, selecciona el reporte, define el rango de fechas, filtra la campana Celulas, exporta el archivo y depura columnas innecesarias. | Fecha del mes pasado y mes actual; campana = Celulas. | Telefono, DPI, Fecha, Nivel 1, Nivel 2, Nivel 3, Comentarios. | Alimenta la trazabilidad de la gestion realizada y la clasificacion de resultados por niveles de tipificacion. | Informacion confirmada por la captura del Excel. |
+| 2 | UCONTACT | Reportes > CRM GENESIS > Detalle Gestiones CRM GENESIS | Detalle Gestiones CRM GENESIS | Desde el modulo CRM GENESIS de UCONTACT, donde se almacenan las gestiones relacionadas con el caso o cliente. | El analista accede al reporte, aplica filtros de fechas y campana, descarga el archivo y toma solo las columnas necesarias para la reportería. | Fecha del mes anterior y mes actual; campana = Celulas. | Telefono, DPI, Fecha, Nivel 1, Nivel 2, Nivel 3, Comentarios. | Complementa y valida las gestiones CRM que deben reflejarse en la reportería final. | Informacion confirmada por la captura del Excel. |
+| 3 | UCONTACT | Reportes > Detalles > CDR Completo por Campana | CDR Completo por Campana | Desde el modulo de detalle de llamadas, que concentra la totalidad de llamadas gestionadas por campana. | El analista descarga el reporte de llamadas, filtra por campana y periodo, y luego selecciona los campos que permitan medir intentos, contacto y detalle operativo. | Se recomienda usar el mismo periodo de trabajo: mes anterior y mes actual; campana = Celulas. | Telefono, Fecha/Hora de llamada, Duracion, Campana, Agente o extension, Estado/resultado de llamada, Origen/Destino. | Permite cuantificar la totalidad de llamadas y complementar indicadores de contactabilidad, intentos y trazabilidad operativa. | Los nombres exactos de columnas deben validarse con el archivo real del reporte CDR. |
+| 4 | Excel / Plantilla destino | Archivo predefinido de reportería | Plantilla reportería de Celulas | En una plantilla consolidada donde se plasma la informacion ya filtrada y depurada de los reportes fuente. | Actualmente la informacion se copia, pega, cruza y valida manualmente antes de emitir el consolidado final. | Aplica la misma logica de periodo y campana definida en los reportes fuente. | Telefono, DPI, Fecha de gestion, Ultima tipificacion, Niveles de tipificacion, Comentarios, Total llamadas, Duracion total, Contactado si/no, Observaciones de control. | Es el entregable final para consumo operativo o de negocio. | Fila agregada como propuesta funcional para dejar identificado el sistema destino del proceso. |
+
+## Campos minimos sugeridos para la plantilla final
+
+Los siguientes campos son recomendados para la reportería final, considerando los reportes visibles en la captura:
+
+1. Telefono
+2. DPI
+3. Fecha de gestion
+4. Nivel 1
+5. Nivel 2
+6. Nivel 3
+7. Comentarios
+8. Total llamadas
+9. Ultima fecha de llamada
+10. Duracion total o ultima duracion
+11. Agente de ultima gestion
+12. Resultado de llamada
+13. Contactado si/no
+14. Fuente del dato
+15. Observaciones
+
+## Recomendaciones para la futura automatizacion en Python
+
+- Parametrizar el rango de fechas para evitar ajustes manuales cada mes.
+- Parametrizar el nombre de campana (**Celulas**) para reutilizar el robot con otras campanas.
+- Estandarizar nombres de columnas al momento de leer los archivos descargados.
+- Agregar validaciones de campos obligatorios: Telefono, Fecha y campana.
+- Registrar en log la cantidad de filas descargadas por cada reporte y la cantidad de filas cargadas a la plantilla final.
+- Identificar la llave de cruce principal entre reportes; por lo visible, **Telefono** y/o **DPI** parecen candidatos naturales.
+
+## Pendientes de validacion
+
+1. Confirmar nombres exactos de columnas del reporte **CDR Completo por Campana**.
+2. Confirmar si existe una cuarta fuente manual adicional en el flujo que no sea legible por la resolucion de la imagen.
+3. Confirmar la estructura definitiva de la plantilla destino para evitar columnas redundantes.
