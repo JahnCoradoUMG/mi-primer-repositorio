@@ -1,0 +1,165 @@
+package org.prjantlr03;
+
+import analizadores.trdcypressBaseVisitor;
+import analizadores.trdcypressParser;
+
+import java.util.List;
+
+public class mivisitor extends trdcypressBaseVisitor<String> {
+
+    private static final String INDENT = "        ";
+
+    @Override
+    public String visitIniciodescribe(trdcypressParser.IniciodescribeContext ctx) {
+        StringBuilder javaCode = new StringBuilder();
+
+        appendImports(javaCode);
+        appendClassStart(javaCode);
+        appendDriverLifecycle(javaCode);
+
+        javaCode.append(visit(ctx.funcioninicial()));
+        javaCode.append("}\n");
+
+        return javaCode.toString();
+    }
+
+    @Override
+    public String visitComandoit(trdcypressParser.ComandoitContext ctx) {
+        String testName = toTestMethodName(ctx.PARAMETRO().getText());
+
+        return new StringBuilder()
+                .append("    @Test\n")
+                .append("    public void ").append(testName).append("() {\n")
+                .append(visit(ctx.funcioninicial()))
+                .append("    }\n\n")
+                .toString();
+    }
+
+    @Override
+    public String visitFuncioninicial(trdcypressParser.FuncioninicialContext ctx) {
+        StringBuilder body = new StringBuilder();
+
+        for (trdcypressParser.ComandosContext command : ctx.comandos()) {
+            body.append(visit(command));
+        }
+
+        return body.toString();
+    }
+
+    @Override
+    public String visitComandos(trdcypressParser.ComandosContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public String visitComandovisit(trdcypressParser.ComandovisitContext ctx) {
+        String url = cleanParameter(ctx.PARAMETRO().getText());
+        return INDENT + "driver.get(\"" + url + "\");\n";
+    }
+
+    @Override
+    public String visitComandoget(trdcypressParser.ComandogetContext ctx) {
+        String selector = cleanParameter(ctx.PARAMETRO().getText());
+        return buildSeleniumCommand("driver.findElement(By.cssSelector(\"" + selector + "\"))", ctx.mascomandos());
+    }
+
+    @Override
+    public String visitComandocontains(trdcypressParser.ComandocontainsContext ctx) {
+        String containedText = visit(ctx.accioncontains());
+        String expression = "driver.findElement(By.xpath(\"//*[contains(text()," + containedText + ")]\"))";
+
+        return buildSeleniumCommand(expression, ctx.mascomandos());
+    }
+
+    @Override
+    public String visitMascomandos(trdcypressParser.MascomandosContext ctx) {
+        if (ctx.accionclick() != null) {
+            return visit(ctx.accionclick());
+        }
+
+        if (ctx.accioncontains() != null) {
+            return visit(ctx.accioncontains());
+        }
+
+        return visitChildren(ctx);
+    }
+
+    @Override
+    public String visitAccionclick(trdcypressParser.AccionclickContext ctx) {
+        return ".click()";
+    }
+
+    @Override
+    public String visitAccioncontains(trdcypressParser.AccioncontainsContext ctx) {
+        return "'" + cleanParameter(ctx.PARAMETRO().getText()) + "'";
+    }
+
+    @Override
+    public String visitTexto(trdcypressParser.TextoContext ctx) {
+        if (ctx.PARAMETRO() != null) {
+            return cleanParameter(ctx.PARAMETRO().getText());
+        }
+
+        if (ctx.NUMERO() != null) {
+            return ctx.NUMERO().getText();
+        }
+
+        return "";
+    }
+
+    private void appendImports(StringBuilder javaCode) {
+        String[] imports = {
+                "org.junit.After",
+                "org.junit.Before",
+                "org.junit.Test",
+                "org.openqa.selenium.By",
+                "org.openqa.selenium.WebDriver",
+                "org.openqa.selenium.WebElement",
+                "org.openqa.selenium.chrome.ChromeDriver"
+        };
+
+        for (String importName : imports) {
+            javaCode.append("import ").append(importName).append(";\n");
+        }
+
+        javaCode.append('\n');
+    }
+
+    private void appendClassStart(StringBuilder javaCode) {
+        javaCode.append("public class FirstScript {\n\n");
+        javaCode.append("    private WebDriver driver;\n\n");
+    }
+
+    private void appendDriverLifecycle(StringBuilder javaCode) {
+        javaCode.append("    @Before\n");
+        javaCode.append("    public void setUp() {\n");
+        javaCode.append("        System.setProperty(\"webdriver.chrome.driver\", \"chromedriver\");\n");
+        javaCode.append("        driver = new ChromeDriver();\n");
+        javaCode.append("    }\n\n");
+
+        javaCode.append("    @After\n");
+        javaCode.append("    public void tearDown() {\n");
+        javaCode.append("        if (driver != null) {\n");
+        javaCode.append("            driver.quit();\n");
+        javaCode.append("        }\n");
+        javaCode.append("    }\n\n");
+    }
+
+    private String buildSeleniumCommand(String start, List<trdcypressParser.MascomandosContext> chainedCommands) {
+        StringBuilder command = new StringBuilder(INDENT).append(start);
+
+        for (trdcypressParser.MascomandosContext nextCommand : chainedCommands) {
+            command.append(visit(nextCommand));
+        }
+
+        return command.append(";\n").toString();
+    }
+
+    private String cleanParameter(String value) {
+        return value.replace("'", "").replace("\"", "");
+    }
+
+    private String toTestMethodName(String value) {
+        return cleanParameter(value).replaceAll("\\s+", "_");
+    }
+}
